@@ -1,0 +1,77 @@
+/* =============================================
+   Win98 Window Animations
+   animations.css
+   ============================================= */
+
+@keyframes win98-open {
+  0% {
+    transform: scaleX(1) scaleY(0.05);
+    opacity: 0;
+  }
+  40% {
+    transform: scaleX(1) scaleY(1.03);
+    opacity: 1;
+  }
+  70% {
+    transform: scaleX(1) scaleY(0.97);
+  }
+  100% {
+    transform: scaleX(1) scaleY(1);
+    opacity: 1;
+  }
+}
+
+@keyframes win98-close {
+  0% {
+    transform: scaleX(1) scaleY(1);
+    opacity: 1;
+  }
+  60% {
+    transform: scaleX(1) scaleY(0.05);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scaleX(0.5) scaleY(0);
+    opacity: 0;
+  }
+}
+
+/* Snap/release: very subtle bounce on mouseup */
+@keyframes win98-snap {
+  0%   { transform: translate(0, 0); }
+  30%  { transform: translate(0, -3px); }
+  60%  { transform: translate(0, 2px); }
+  100% { transform: translate(0, 0); }
+}
+
+.window {
+  transform-origin: center top;
+  will-change: transform, opacity;
+}
+
+.window.is-opening {
+  animation: win98-open 160ms ease-out forwards;
+  pointer-events: none;
+}
+
+.window.is-closing {
+  animation: win98-close 130ms ease-in forwards;
+  pointer-events: none;
+}
+
+.window.is-snapping {
+  animation: win98-snap 180ms ease-out forwards;
+}
+
+/* Active (focused) window: title-bar highlight already handled by 98.css,
+   but we ensure inactive windows look slightly dimmed */
+.window.is-inactive .title-bar {
+  /* 98.css already handles this via :not(:focus) but we force it for z-index managed windows */
+  background: #808080 !important;
+  /* gradient trick matching 98.css inactive style */
+  background: linear-gradient(
+    to right,
+    #808080,
+    #b0b0b0
+  ) !important;
+}

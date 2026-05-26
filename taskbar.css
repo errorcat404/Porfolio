@@ -1,0 +1,171 @@
+/* =============================================
+   taskbar.css
+   Win98 Taskbar Buttons + Desktop Icons
+   ============================================= */
+
+/* ── Desktop icon container ── */
+#desktop-icons {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 50;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* ── Single desktop icon ── */
+.desktop-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 72px;
+  padding: 4px;
+  cursor: default;
+  border: 1px solid transparent;
+  outline: 1px solid transparent;
+  text-align: center;
+  gap: 2px;
+  position: relative;
+}
+
+.desktop-icon img {
+  width: 32px;
+  height: 32px;
+  image-rendering: pixelated;
+  display: block;
+}
+
+/* Fallback icon when no image */
+.desktop-icon .icon-fallback {
+  width: 32px;
+  height: 32px;
+  background: #c0c0c0;
+  border-top: 2px solid #ffffff;
+  border-left: 2px solid #ffffff;
+  border-right: 2px solid #808080;
+  border-bottom: 2px solid #808080;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.desktop-icon span {
+  font-family: "MSW98UI-Regular", "MS Sans Serif", Arial, sans-serif;
+  font-size: 11px;
+  color: #ffffff;
+  text-shadow:
+    1px 1px 0 #000,
+   -1px -1px 0 #000,
+    1px -1px 0 #000,
+   -1px 1px 0 #000;
+  line-height: 1.2;
+  word-break: break-word;
+  width: 100%;
+}
+
+/* Selected state */
+.desktop-icon.is-selected {
+  border: 1px dotted #ffffff;
+  outline: 1px dotted #000000;
+  background: rgba(0, 0, 128, 0.5);
+}
+
+.desktop-icon.is-selected span {
+  background: #000080;
+  color: #ffffff;
+}
+
+/* ── Taskbar window buttons area ── */
+#taskbar-buttons {
+  display: flex;
+  flex: 1;
+  height: 100%;
+  align-items: center;
+  gap: 2px;
+  overflow: hidden;
+  padding: 0 2px;
+  /* sits between start button and clock */
+}
+
+/* ── Individual taskbar window button ── */
+.taskbar-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  min-width: 80px;
+  max-width: 160px;
+  padding: 0 6px;
+  font-family: "MSW98UI-Regular", "MS Sans Serif", Arial, sans-serif;
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: default;
+  flex-shrink: 1;
+
+  /* 98.css-style raised button look */
+  background-color: #c0c0c0;
+  border-top:    2px solid #ffffff;
+  border-left:   2px solid #ffffff;
+  border-right:  2px solid #808080;
+  border-bottom: 2px solid #808080;
+  box-shadow: inset -1px -1px 0 #404040, inset 1px 1px 0 #dfdfdf;
+}
+
+.taskbar-btn img {
+  width: 14px;
+  height: 14px;
+  image-rendering: pixelated;
+  flex-shrink: 0;
+}
+
+.taskbar-btn .btn-icon-fallback {
+  width: 14px;
+  height: 14px;
+  background: #808080;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+}
+
+.taskbar-btn span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Active / focused window button — pressed-in look */
+.taskbar-btn.is-active {
+  border-top:    2px solid #808080;
+  border-left:   2px solid #808080;
+  border-right:  2px solid #ffffff;
+  border-bottom: 2px solid #ffffff;
+  box-shadow: inset 1px 1px 0 #404040, inset -1px -1px 0 #dfdfdf;
+  background-color: #b8b8b8;
+  /* stipple pattern like Win98 pressed button */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='2' height='2'%3E%3Crect x='0' y='0' width='1' height='1' fill='%23c0c0c0'/%3E%3Crect x='1' y='1' width='1' height='1' fill='%23c0c0c0'/%3E%3C/svg%3E");
+}
+
+/* Minimized window button (not active, but present) */
+.taskbar-btn.is-minimized {
+  font-style: normal;
+}
+
+/* ── Override existing taskbar layout to fit buttons ── */
+/* The existing #taskbar has display:flex; we just inject #taskbar-buttons between startBtn and clock */
+#taskbar {
+  /* already set in style.css – we don't override, just complement */
+  gap: 4px;
+}
+
+/* Ensure clock stays on the right */
+#clock {
+  flex-shrink: 0;
+}

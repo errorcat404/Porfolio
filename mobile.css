@@ -1,0 +1,428 @@
+/* =============================================
+   mobile.css  (REVISED)
+   Responsive adaptations for Win98 Portfolio.
+
+   Breakpoints:
+     tablet     : ≤ 900px
+     phone      : ≤ 600px
+     small phone: ≤ 380px
+
+   Rules:
+   - Never override desktop styles above 900px
+   - Never touch window-manager logic
+   - Style only — behaviour in touch-drag.js / responsive-taskbar.js
+   ============================================= */
+
+/* ── CSS custom props (set by responsive-taskbar.js) ── */
+:root {
+  --real-vh: 100vh;
+  --taskbar-h: 44px;
+}
+
+/* ══════════════════════════════════════════════
+   TOUCH BASELINE — all coarse-pointer devices
+══════════════════════════════════════════════ */
+@media (pointer: coarse) {
+
+  /* Prevent double-tap zoom on interactive elements */
+  button,
+  .desktop-icon,
+  .title-bar,
+  #taskbar {
+    touch-action: manipulation;
+  }
+
+  /* Kill accidental text selection during drag */
+  .title-bar,
+  .title-bar-text,
+  #desktop-icons {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Bigger close/min hit areas — easier to tap */
+  .title-bar-controls button {
+    min-width: 24px;
+    min-height: 24px;
+  }
+
+  /* Desktop icon: bigger tap target */
+  .desktop-icon {
+    padding: 8px 6px;
+    width: 80px;
+    gap: 4px;
+  }
+
+  .desktop-icon img {
+    width: 36px;
+    height: 36px;
+  }
+
+  .desktop-icon span {
+    font-size: 12px;
+  }
+
+  /* Taskbar button: taller tap area */
+  .taskbar-btn {
+    height: 28px;
+    min-width: 60px;
+    padding: 0 8px;
+    font-size: 12px;
+  }
+}
+
+/* ══════════════════════════════════════════════
+   TABLET  ≤ 900px
+══════════════════════════════════════════════ */
+@media screen and (max-width: 900px) {
+
+  /* ── Body: prevent page from scrolling/bouncing ── */
+  html, body {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    height: var(--real-vh, 100vh);
+  }
+
+  /* ── Taskbar ── */
+  #taskbar {
+    height: 40px;
+    padding: 3px 4px;
+  }
+
+  #startBtn {
+    height: 30px;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  #clock {
+    font-size: 14px;
+    width: 54px;
+    height: 28px;
+    flex-shrink: 0;
+    /* Prevent iOS zoom on focus */
+    font-size: max(14px, 16px);
+    pointer-events: none;
+  }
+
+  #taskbar-buttons {
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    flex-shrink: 1;
+    gap: 3px;
+    /* Allow horizontal scroll without triggering page scroll */
+    overscroll-behavior-x: contain;
+  }
+
+  #taskbar-buttons::-webkit-scrollbar {
+    display: none;
+  }
+
+  .taskbar-btn {
+    height: 28px;
+    min-width: 70px;
+    max-width: 130px;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+
+  /* ── Windows: cap size, allow inner scroll ── */
+  [data-window-id] {
+    max-width: calc(100vw - 16px) !important;
+    max-height: calc(var(--real-vh, 100vh) - var(--taskbar-h, 44px) - 8px) !important;
+    box-sizing: border-box;
+    /* Prevent window from shifting page */
+    overscroll-behavior: contain;
+  }
+
+  /* Window body: allow scrolling inside window */
+  [data-window-id] .window-body {
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    /* Fix height to enable inner scroll */
+    max-height: calc(var(--real-vh, 100vh) - var(--taskbar-h, 44px) - 50px);
+  }
+
+  /* Title bar */
+  .title-bar {
+    height: 26px;
+    padding: 0 2px;
+    /* Prevent title bar drag from scrolling page */
+    touch-action: none;
+  }
+
+  .title-bar-text {
+    font-size: 13px;
+    line-height: 26px;
+  }
+
+  .title_img {
+    width: 16px;
+  }
+
+  .title-bar-controls button {
+    width: 20px;
+    height: 20px;
+    margin: 2px 1px;
+  }
+
+  /* ── Desktop icons ── */
+  #desktop-icons {
+    top: 6px;
+    left: 6px;
+    gap: 8px;
+    /* Icons above windows visually */
+    z-index: 10;
+  }
+
+  .desktop-icon {
+    width: 76px;
+  }
+}
+
+/* ══════════════════════════════════════════════
+   PHONE  ≤ 600px
+══════════════════════════════════════════════ */
+@media screen and (max-width: 600px) {
+
+  /* ── Taskbar ── */
+  #taskbar {
+    height: 44px;
+    padding: 3px;
+  }
+
+  #startBtn {
+    width: 56px;
+    height: 34px;
+    font-size: 13px;
+    padding: 4px 5px;
+  }
+
+  #clock {
+    font-size: 16px; /* ≥16px prevents iOS zoom */
+    width: 50px;
+    height: 30px;
+  }
+
+  .taskbar-btn {
+    height: 32px;
+    min-width: 44px;
+    max-width: 110px;
+    padding: 0 6px;
+    font-size: 11px;
+  }
+
+  .taskbar-btn img {
+    width: 16px;
+    height: 16px;
+  }
+
+  /* ── Windows: near-fullscreen on phone ── */
+  [data-window-id] {
+    max-width: calc(100vw - 8px) !important;
+    max-height: calc(var(--real-vh, 100vh) - var(--taskbar-h, 44px) - 6px) !important;
+  }
+
+  [data-window-id] .window-body {
+    max-height: calc(var(--real-vh, 100vh) - var(--taskbar-h, 44px) - 60px);
+  }
+
+  /* Larger title bar */
+  .title-bar {
+    height: 30px;
+    touch-action: none;
+  }
+
+  .title-bar-text {
+    font-size: 14px;
+    line-height: 30px;
+  }
+
+  .title_img {
+    width: 18px;
+    margin-right: 4px;
+  }
+
+  /* Control buttons: large reliable tap target */
+  .title-bar-controls button {
+    width: 24px;
+    height: 24px;
+    margin: 2px 1px;
+    background-position: center;
+  }
+
+  /* ── Desktop icons: top-right on phone
+        so they don't block window content ── */
+  #desktop-icons {
+    top: 6px;
+    left: auto;
+    right: 6px;
+    gap: 10px;
+  }
+
+  .desktop-icon {
+    width: 72px;
+    padding: 6px 4px;
+  }
+
+  .desktop-icon img {
+    width: 36px;
+    height: 36px;
+  }
+
+  .desktop-icon span {
+    font-size: 11px;
+  }
+
+  /* Project images: fit on phone screen */
+  .project_img {
+    height: auto !important;
+    width: calc(50% - 10px);
+    min-width: 120px;
+  }
+
+  .projects {
+    gap: 8px;
+    padding: 8px;
+    align-items: flex-start;
+  }
+
+  /* Photo window: fit image */
+  .photo img {
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  /* Info window text */
+  .window-body p {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+}
+
+/* ══════════════════════════════════════════════
+   SMALL PHONE  ≤ 380px
+══════════════════════════════════════════════ */
+@media screen and (max-width: 380px) {
+
+  #taskbar {
+    height: 42px;
+  }
+
+  #startBtn {
+    width: 48px;
+    height: 32px;
+    font-size: 12px;
+  }
+
+  #clock {
+    font-size: 16px;
+    width: 46px;
+  }
+
+  .taskbar-btn {
+    height: 30px;
+    min-width: 36px;
+    max-width: 90px;
+    padding: 0 4px;
+    font-size: 10px;
+    gap: 2px;
+  }
+
+  .taskbar-btn img {
+    width: 14px;
+    height: 14px;
+  }
+
+  .taskbar-btn span {
+    max-width: 52px;
+  }
+
+  /* Icons: compact */
+  #desktop-icons {
+    gap: 6px;
+  }
+
+  .desktop-icon {
+    width: 60px;
+    padding: 4px 2px;
+  }
+
+  .desktop-icon img {
+    width: 28px;
+    height: 28px;
+  }
+
+  .desktop-icon span {
+    font-size: 10px;
+  }
+
+  .title-bar-text {
+    font-size: 12px;
+  }
+
+  .title-bar-controls button {
+    width: 22px;
+    height: 22px;
+  }
+
+  /* Projects: single column */
+  .project_img {
+    width: calc(100% - 10px);
+  }
+}
+
+/* ══════════════════════════════════════════════
+   LANDSCAPE PHONE
+   Short viewport — taskbar eats vertical space.
+══════════════════════════════════════════════ */
+@media screen and (max-height: 450px) and (orientation: landscape) {
+
+  #taskbar {
+    height: 36px;
+  }
+
+  [data-window-id] {
+    max-height: calc(var(--real-vh, 100vh) - 40px) !important;
+  }
+
+  [data-window-id] .window-body {
+    max-height: calc(var(--real-vh, 100vh) - 80px);
+  }
+
+  /* Icons in a horizontal row at bottom-left in landscape */
+  #desktop-icons {
+    flex-direction: row;
+    flex-wrap: wrap;
+    top: auto;
+    bottom: 44px;
+    left: 4px;
+    right: auto;
+    max-width: 160px;
+    gap: 4px;
+  }
+
+  .desktop-icon {
+    width: 60px;
+  }
+}
+
+/* ══════════════════════════════════════════════
+   COMPACT TASKBAR — JS adds this class when
+   there are many buttons on a tiny screen
+══════════════════════════════════════════════ */
+.taskbar-compact .taskbar-btn span {
+  display: none;
+}
+
+.taskbar-compact .taskbar-btn {
+  min-width: 30px;
+  padding: 0 4px;
+  justify-content: center;
+}
