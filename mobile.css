@@ -135,6 +135,7 @@
     max-width: calc(100vw - 16px) !important;
     max-height: calc(var(--real-vh, 100vh) - var(--taskbar-h, 44px) - 8px) !important;
     box-sizing: border-box;
+    min-width: 0;
     /* Prevent window from shifting page */
     overscroll-behavior: contain;
   }
@@ -145,8 +146,17 @@
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
     /* Fix height to enable inner scroll */
     max-height: calc(var(--real-vh, 100vh) - var(--taskbar-h, 44px) - 50px);
+  }
+
+  [data-window-id] .window-body img,
+  [data-window-id] .window-body video,
+  [data-window-id] .window-body canvas {
+    max-width: 100%;
   }
 
   /* Title bar */
@@ -160,6 +170,7 @@
   .title-bar-text {
     font-size: 13px;
     line-height: 26px;
+    min-width: 0;
   }
 
   .title_img {
@@ -225,6 +236,7 @@
 
   /* ── Windows: near-fullscreen on phone ── */
   [data-window-id] {
+    width: calc(100vw - 8px) !important;
     max-width: calc(100vw - 8px) !important;
     max-height: calc(var(--real-vh, 100vh) - var(--taskbar-h, 44px) - 6px) !important;
   }
@@ -293,6 +305,11 @@
     align-items: flex-start;
   }
 
+  .projects a {
+    flex-basis: calc(50% - 8px);
+    max-width: calc(50% - 8px);
+  }
+
   /* Photo window: fit image */
   .photo img {
     width: 100% !important;
@@ -303,6 +320,25 @@
   .window-body p {
     font-size: 14px;
     line-height: 1.5;
+  }
+
+  .window-body h3 {
+    font-size: 1.35rem;
+  }
+
+  .window-body h4 {
+    font-size: 1.05rem;
+  }
+
+  .contact {
+    align-items: flex-start;
+    font-size: 16px;
+    gap: 8px;
+  }
+
+  .contact > img {
+    flex-basis: 42px;
+    min-width: 36px;
   }
 }
 
@@ -375,6 +411,11 @@
   /* Projects: single column */
   .project_img {
     width: calc(100% - 10px);
+  }
+
+  .projects a {
+    flex-basis: 100%;
+    max-width: 100%;
   }
 }
 

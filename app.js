@@ -61,6 +61,19 @@ const AppCore = (() => {
     };
   }
 
+  function clampWindowInside(win, x, y, fallbackTaskbarHeight, padding = 4) {
+    const vw = viewportWidth();
+    const vh = viewportHeight();
+    const tbH = taskbarHeight(fallbackTaskbarHeight);
+    const maxX = Math.max(padding, vw - win.offsetWidth - padding);
+    const maxY = Math.max(padding, vh - tbH - win.offsetHeight - padding);
+
+    return {
+      x: Math.max(padding, Math.min(maxX, x)),
+      y: Math.max(padding, Math.min(maxY, y)),
+    };
+  }
+
   function snapWindow(win) {
     win.classList.remove('is-snapping');
     void win.offsetWidth;
@@ -132,6 +145,7 @@ const AppCore = (() => {
     isTablet,
     isPhone,
     clampWindow,
+    clampWindowInside,
     snapWindow,
     setAbsolute,
     parsePosition,
@@ -173,6 +187,121 @@ const WindowState = (() => {
 })();
 
 window.WindowState = WindowState;
+
+const WindowSizer = (() => {
+  const TASKBAR_H = 44;
+  const stored = new WeakMap();
+
+  function padding() {
+    return AppCore.isPhone() ? 4 : 8;
+  }
+
+  function bounds() {
+    const pad = padding();
+    const taskbar = AppCore.taskbarHeight(TASKBAR_H);
+    return {
+      left: pad,
+      top: pad,
+      width: Math.max(160, AppCore.viewportWidth() - pad * 2),
+      height: Math.max(120, AppCore.viewportHeight() - taskbar - pad * 2),
+    };
+  }
+
+  function controlButton(win) {
+    return win.querySelector(
+      '.title-bar-controls button[aria-label="Maximize"], .title-bar-controls button[aria-label="Restore"]'
+    );
+  }
+
+  function setButtonState(win, maximized) {
+    const button = controlButton(win);
+    if (button) button.setAttribute('aria-label', maximized ? 'Restore' : 'Maximize');
+  }
+
+  function capture(win) {
+    const rect = win.getBoundingClientRect();
+    return {
+      position: win.style.position,
+      margin: win.style.margin,
+      left: win.style.left || rect.left + 'px',
+      top: win.style.top || rect.top + 'px',
+      width: win.style.width || rect.width + 'px',
+      height: win.style.height || rect.height + 'px',
+      maxWidth: win.style.maxWidth,
+      maxHeight: win.style.maxHeight,
+      transform: win.style.transform,
+    };
+  }
+
+  function applyMaximized(win) {
+    const box = bounds();
+    AppCore.setAbsolute(win, box.left, box.top);
+    win.style.transform = 'none';
+    win.style.width = box.width + 'px';
+    win.style.height = box.height + 'px';
+    win.style.maxWidth = 'none';
+    win.style.maxHeight = 'none';
+  }
+
+  function maximize(win) {
+    if (!win || isMaximized(win)) return;
+    stored.set(win, capture(win));
+    win.classList.add('is-maximized');
+    applyMaximized(win);
+    setButtonState(win, true);
+  }
+
+  function restore(win) {
+    if (!win || !isMaximized(win)) return;
+
+    const prev = stored.get(win);
+    if (prev) {
+      win.style.position = prev.position;
+      win.style.margin = prev.margin;
+      win.style.left = prev.left;
+      win.style.top = prev.top;
+      win.style.width = prev.width;
+      win.style.height = prev.height;
+      win.style.maxWidth = prev.maxWidth;
+      win.style.maxHeight = prev.maxHeight;
+      win.style.transform = prev.transform;
+      stored.delete(win);
+    } else {
+      win.style.maxWidth = '';
+      win.style.maxHeight = '';
+      win.style.transform = '';
+    }
+
+    win.classList.remove('is-maximized');
+    setButtonState(win, false);
+  }
+
+  function toggle(win) {
+    if (isMaximized(win)) {
+      restore(win);
+    } else {
+      maximize(win);
+    }
+  }
+
+  function isMaximized(win) {
+    return !!win && win.classList.contains('is-maximized');
+  }
+
+  function refresh() {
+    document.querySelectorAll('.window.is-maximized').forEach(applyMaximized);
+  }
+
+  const onResize = AppCore.debounce(refresh, 80);
+  window.addEventListener('resize', onResize);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', onResize);
+  }
+
+  return { applyMaximized, isMaximized, maximize, restore, toggle };
+})();
+
+window.WindowSizer = WindowSizer;
 
 const WindowManager = (() => {
   const status = {};
@@ -298,6 +427,8 @@ const WindowManager = (() => {
     const state = currentStatus(id);
     if (state === 'closed') return;
 
+    if (WindowSizer.isMaximized(win)) WindowSizer.restore(win);
+
     status[id] = 'closed';
     if (activeId === id) activeId = null;
 
@@ -336,6 +467,16 @@ const WindowManager = (() => {
     focusWindow(id);
   }
 
+  function maximizeWindow(target) {
+    const win = el(target);
+    if (!win) return;
+
+    const id = AppCore.windowId(win);
+    if (currentStatus(id) !== 'opened') return;
+    WindowSizer.toggle(win);
+    bringToFront(win);
+  }
+
   function getStatus(id) {
     return currentStatus(id);
   }
@@ -350,6 +491,16 @@ const WindowManager = (() => {
       minBtn.addEventListener('click', event => {
         event.stopPropagation();
         minimizeWindow(win);
+      });
+    }
+
+    const maxBtn = win.querySelector('[aria-label="Maximize"], [aria-label="Restore"]');
+    if (maxBtn) {
+      const fresh = maxBtn.cloneNode(true);
+      maxBtn.replaceWith(fresh);
+      fresh.addEventListener('click', event => {
+        event.stopPropagation();
+        maximizeWindow(win);
       });
     }
 
@@ -385,6 +536,7 @@ const WindowManager = (() => {
     restoreWindow,
     closeWindow,
     focusWindow,
+    maximizeWindow,
     taskbarClick,
     getStatus,
     getActiveId,
@@ -406,6 +558,7 @@ window.WindowManager = WindowManager;
     let moved = false;
 
     function start(clientX, clientY) {
+      if (WindowSizer.isMaximized(win)) return;
       active = true;
       moved = false;
       const rect = win.getBoundingClientRect();
@@ -417,6 +570,7 @@ window.WindowManager = WindowManager;
 
     titleBar.addEventListener('mousedown', event => {
       if (event.target.closest('.title-bar-controls')) return;
+      if (WindowSizer.isMaximized(win)) return;
       event.preventDefault();
       const rect = win.getBoundingClientRect();
       win.style.left = rect.left + 'px';
@@ -427,12 +581,18 @@ window.WindowManager = WindowManager;
     titleBar.addEventListener('touchstart', event => {
       if (event.target.closest('.title-bar-controls')) return;
       if (AppCore.isTouchDevice()) return;
+      if (WindowSizer.isMaximized(win)) return;
       const touch = event.touches[0];
       const rect = win.getBoundingClientRect();
       win.style.left = rect.left + 'px';
       win.style.top = rect.top + 'px';
       start(touch.clientX, touch.clientY);
     }, { passive: true });
+
+    titleBar.addEventListener('dblclick', event => {
+      if (event.target.closest('.title-bar-controls')) return;
+      WindowManager.maximizeWindow(win);
+    });
 
     document.addEventListener('mousemove', event => {
       if (!active) return;
@@ -704,7 +864,9 @@ window.DesktopIcons = DesktopIcons;
   function clampOpen(win) {
     const x = parseInt(win.style.left, 10) || 0;
     const y = parseInt(win.style.top, 10) || 0;
-    const position = AppCore.clampWindow(win, x, y, TASKBAR_H);
+    const position = AppCore.isTablet()
+      ? AppCore.clampWindowInside(win, x, y, TASKBAR_H, AppCore.isPhone() ? 4 : 8)
+      : AppCore.clampWindow(win, x, y, TASKBAR_H);
     win.style.left = position.x + 'px';
     win.style.top = position.y + 'px';
   }
@@ -724,6 +886,7 @@ window.DesktopIcons = DesktopIcons;
 
   document.addEventListener('touchmove', event => {
     if (!tracking || !activeWin) return;
+    if (WindowSizer.isMaximized(activeWin)) return;
 
     const touch = findTouch(event);
     if (!touch) return;
@@ -740,7 +903,15 @@ window.DesktopIcons = DesktopIcons;
 
     event.preventDefault();
 
-    const position = AppCore.clampWindow(activeWin, touch.clientX - offsetX, touch.clientY - offsetY, TASKBAR_H);
+    const position = AppCore.isTablet()
+      ? AppCore.clampWindowInside(
+          activeWin,
+          touch.clientX - offsetX,
+          touch.clientY - offsetY,
+          TASKBAR_H,
+          AppCore.isPhone() ? 4 : 8
+        )
+      : AppCore.clampWindow(activeWin, touch.clientX - offsetX, touch.clientY - offsetY, TASKBAR_H);
     activeWin.style.left = position.x + 'px';
     activeWin.style.top = position.y + 'px';
   }, { passive: false });
@@ -787,6 +958,7 @@ window.DesktopIcons = DesktopIcons;
     titleBar.addEventListener('touchstart', event => {
       if (event.target.closest('.title-bar-controls')) return;
       if (tracking) return;
+      if (WindowSizer.isMaximized(win)) return;
 
       const touch = event.changedTouches[0];
       const position = AppCore.parsePosition(win);
@@ -856,21 +1028,63 @@ window.DesktopIcons = DesktopIcons;
     });
   }
 
+  function rememberBaseSize(win) {
+    if (!win.dataset.baseWidth) win.dataset.baseWidth = win.style.width || '';
+    if (!win.dataset.baseHeight) win.dataset.baseHeight = win.style.height || '';
+  }
+
+  function numericSize(value, fallback) {
+    const parsed = parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+
+  function restoreBaseSize(win) {
+    if (WindowSizer.isMaximized(win)) return;
+    if (win.dataset.baseWidth) win.style.width = win.dataset.baseWidth;
+    if (win.dataset.baseHeight) win.style.height = win.dataset.baseHeight;
+  }
+
+  function fitWindowPosition(win, padding) {
+    const current = AppCore.parsePosition(win);
+    const position = AppCore.clampWindowInside(win, current.x, current.y, 44, padding);
+    win.style.left = position.x + 'px';
+    win.style.top = position.y + 'px';
+  }
+
   function constrainWindow(win) {
-    if (!AppCore.isTablet()) return;
+    rememberBaseSize(win);
+    document.documentElement.style.setProperty('--taskbar-h', AppCore.taskbarHeight(44) + 'px');
+
+    if (WindowSizer.isMaximized(win)) {
+      WindowSizer.applyMaximized(win);
+      return;
+    }
+
+    if (!AppCore.isTablet()) {
+      restoreBaseSize(win);
+      return;
+    }
 
     const padding = AppCore.isPhone() ? 4 : 8;
     const maxWidth = AppCore.viewportWidth() - padding * 2;
     const maxHeight = AppCore.viewportHeight() - AppCore.taskbarHeight(44) - padding * 2;
+    const baseWidth = numericSize(win.dataset.baseWidth, win.offsetWidth);
+    const baseHeight = numericSize(win.dataset.baseHeight, win.offsetHeight);
+    const minWidth = Math.min(160, maxWidth);
+    const minHeight = Math.min(120, maxHeight);
 
-    if (win.offsetWidth > maxWidth) win.style.width = maxWidth + 'px';
-    if (win.offsetHeight > maxHeight) win.style.height = maxHeight + 'px';
-    document.documentElement.style.setProperty('--taskbar-h', AppCore.taskbarHeight(44) + 'px');
+    win.style.width = Math.max(minWidth, Math.min(baseWidth, maxWidth)) + 'px';
+    win.style.height = Math.max(minHeight, Math.min(baseHeight, maxHeight)) + 'px';
+    fitWindowPosition(win, padding);
   }
 
   function constrainAll() {
     AppCore.windows().forEach(win => {
-      if (win.style.display === 'none') return;
+      rememberBaseSize(win);
+      if (win.style.display === 'none') {
+        if (!AppCore.isTablet()) restoreBaseSize(win);
+        return;
+      }
       constrainWindow(win);
     });
   }
@@ -917,6 +1131,7 @@ window.DesktopIcons = DesktopIcons;
 
   function init() {
     setRealVh();
+    AppCore.windows().forEach(rememberBaseSize);
     initTaskbarScroll();
     hookOpen();
     updateTaskbarCompact();
@@ -935,18 +1150,49 @@ window.DesktopIcons = DesktopIcons;
     clock.value = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
   }
 
+  function showModal() {
+    const modal = document.getElementById('modal');
+    if (modal) modal.style.display = 'flex';
+  }
+
   function closeModal() {
     const modal = document.getElementById('modal');
-    if (modal) modal.style.display = 'none';
-    history.replaceState({}, '', '/');
+    if (modal) {
+      if (WindowSizer.isMaximized(modal)) WindowSizer.restore(modal);
+      modal.style.display = 'none';
+    }
+    try {
+      history.replaceState({}, '', '/');
+    } catch {}
+  }
+
+  function wireModalControls() {
+    const modal = document.getElementById('modal');
+    if (!modal) return;
+    const controls = modal.querySelector('.title-bar-controls');
+    if (!controls) return;
+
+    controls.addEventListener('click', event => {
+      const button = event.target.closest('button');
+      if (!button) return;
+
+      const label = button.getAttribute('aria-label');
+      event.stopPropagation();
+
+      if (label === 'Close') {
+        closeModal();
+      } else if (label === 'Maximize' || label === 'Restore') {
+        WindowSizer.toggle(modal);
+      }
+    });
   }
 
   window.closeModal = closeModal;
+  wireModalControls();
   updateClock();
   setInterval(updateClock, 1000);
 
   if (params.get('error') === '404') {
-    const modal = document.getElementById('modal');
-    if (modal) modal.style.display = 'block';
+    showModal();
   }
 })();
